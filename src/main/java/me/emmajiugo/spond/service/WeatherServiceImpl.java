@@ -82,8 +82,19 @@ public class WeatherServiceImpl implements WeatherService {
             throw new RuntimeException("Invalid forecast data received");
         }
 
-        // Find the closest time entry to the event start time
-        Instant eventStartTime = event.startTime();
+        // Check if current time is between event start and end time
+        Instant now = Instant.now();
+        Instant timeToCheck;
+
+        if (now.isAfter(event.startTime()) && now.isBefore(event.endTime())) {
+            // Event is happening now, use current time
+            timeToCheck = now;
+        } else {
+            // Event is in the future, use start time
+            timeToCheck = event.startTime();
+        }
+
+        // Find the closest time entry to the timeToCheck
         JsonNode closestTimestamp = null;
         long minDifference = Long.MAX_VALUE;
 
@@ -91,12 +102,12 @@ public class WeatherServiceImpl implements WeatherService {
             String timeString = timeEntry.path("time").asText();
             Instant forecastTime = Instant.parse(timeString);
 
-            // Only consider forecasts before or at the event start time
+            // Only consider forecasts before or at the timeToCheck
             // and no more than 6 hours before (to ensure relevance)
-            if (!forecastTime.isAfter(eventStartTime) &&
-                    forecastTime.plus(6, ChronoUnit.HOURS).isAfter(eventStartTime)) {
+            if (!forecastTime.isAfter(timeToCheck) &&
+                    forecastTime.plus(6, ChronoUnit.HOURS).isAfter(timeToCheck)) {
 
-                long difference = Math.abs(forecastTime.toEpochMilli() - eventStartTime.toEpochMilli());
+                long difference = Math.abs(forecastTime.toEpochMilli() - timeToCheck.toEpochMilli());
                 if (difference < minDifference) {
                     minDifference = difference;
                     closestTimestamp = timeEntry;
@@ -111,10 +122,10 @@ public class WeatherServiceImpl implements WeatherService {
                 Instant forecastTime = Instant.parse(timeString);
 
                 // Only look at forecasts in the near future
-                if (forecastTime.isAfter(eventStartTime) &&
-                        forecastTime.isBefore(eventStartTime.plus(3, ChronoUnit.HOURS))) {
+                if (forecastTime.isAfter(timeToCheck) &&
+                        forecastTime.isBefore(timeToCheck.plus(3, ChronoUnit.HOURS))) {
 
-                    long difference = Math.abs(forecastTime.toEpochMilli() - eventStartTime.toEpochMilli());
+                    long difference = Math.abs(forecastTime.toEpochMilli() - timeToCheck.toEpochMilli());
                     if (difference < minDifference) {
                         minDifference = difference;
                         closestTimestamp = timeEntry;
