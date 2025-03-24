@@ -34,21 +34,21 @@ public class WeatherServiceImpl implements WeatherService {
                 #longitude: {}
                 """, event.location().getLatitude(), event.location().getLongitude());
 
-        //JsonNode forecastData = fetchForecastData(event.location());
-        //log.info(forecastData.toString());
-
         // Try to get from cache first
         String cacheKey = event.location().getCacheKey();
-        JsonNode forecastData = weatherCacheManager.getIfPresent(cacheKey);
+        JsonNode forecastData = weatherCacheManager.get(cacheKey, key -> fetchForecastData(event.location()));
 
-        // If not in cache, fetch from API and cache it
-        if (forecastData == null) {
-            log.info("Cache miss for key: {}", cacheKey);
-            forecastData = fetchForecastData(event.location());
-            weatherCacheManager.put(cacheKey, forecastData);
-        } else {
-            log.info("Cache hit for key: {}", cacheKey);
-        }
+//        JsonNode forecastData = weatherCacheManager.getIfPresent(cacheKey);
+//        log.info(forecastData.toString());
+//
+//        // If not in cache, fetch from API and cache it
+//        if (forecastData == null) {
+//            log.info("Cache miss for key: {}", cacheKey);
+//            forecastData = fetchForecastData(event.location());
+//            weatherCacheManager.put(cacheKey, forecastData);
+//        } else {
+//            log.info("Cache hit for key: {}", cacheKey);
+//        }
 
         return findClosestForecast(forecastData, event);
     }
